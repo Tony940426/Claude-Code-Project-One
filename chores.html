@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChoreBoard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOP BAR ── */
+    #top-bar {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 0 20px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    #app-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #2563eb;
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+
+    #nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 12px;
+    }
+
+    #month-label {
+      font-size: 16px;
+      font-weight: 600;
+      min-width: 160px;
+      text-align: center;
+    }
+
+    .btn-nav {
+      background: none;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      width: 30px; height: 30px;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      color: #374151;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-nav:hover { background: #f3f4f6; }
+
+    #today-btn {
+      background: none;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #374151;
+    }
+    #today-btn:hover { background: #f3f4f6; }
+
+    #action-buttons {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+
+    .btn-secondary {
+      background: #fff;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-secondary:hover { background: #f9fafb; }
+
+    /* ── CALENDAR ── */
+    #calendar-wrapper {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+    }
+
+    #calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      border-top: 1px solid #d1d5db;
+      border-left: 1px solid #d1d5db;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .day-header {
+      background: #f8fafc;
+      border-right: 1px solid #d1d5db;
+      border-bottom: 1px solid #d1d5db;
+      padding: 8px 0;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .day-cell {
+      border-right: 1px solid #d1d5db;
+      border-bottom: 1px solid #d1d5db;
+      padding: 4px;
+      min-height: 110px;
+      vertical-align: top;
+      background: #fff;
+      position: relative;
+    }
+
+    .day-cell.other-month {
+      background: #fafafa;
+    }
+    .day-cell.other-month .date-num { color: #c4c4c4; }
+
+    .day-cell.today .date-num {
+      background: #2563eb;
+      color: #fff;
+      border-radius: 50%;
+      width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .date-num {
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 2px;
+      width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .chips-container {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    /* ── CHORE CHIPS ── */
+    .chore-chip {
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      user-select: none;
+      transition: opacity 0.15s;
+    }
+    .chore-chip:hover { opacity: 0.85; }
+
+    .chore-chip.done {
+      opacity: 0.5;
+    }
+    .chore-chip.done .chip-title {
+      text-decoration: line-through;
+    }
+
+    .chip-check { font-size: 10px; flex-shrink: 0; }
+    .chip-title { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+    .chip-initials {
+      font-size: 9px;
+      font-weight: 700;
+      background: rgba(0,0,0,0.2);
+      border-radius: 3px;
+      padding: 1px 3px;
+      flex-shrink: 0;
+    }
+
+    /* ── MODALS ── */
+    #modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 99;
+      display: none;
+    }
+    #modal-backdrop.active { display: block; }
+
+    .modal {
+      position: fixed; inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .modal.active { display: flex; }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 10px;
+      padding: 24px;
+      width: 440px;
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 64px);
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+      pointer-events: all;
+    }
+
+    .modal-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #111827;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="date"],
+    .form-group input[type="number"],
+    .form-group select {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 14px;
+      color: #111827;
+      background: #fff;
+      outline: none;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+
+    .date-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .recurrence-sub {
+      display: none;
+      margin-top: 10px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+    }
+    .recurrence-sub.visible { display: block; }
+
+    .week-days {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .week-day-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 2px solid #d1d5db;
+      background: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #6b7280;
+    }
+    .week-day-btn.selected {
+      border-color: #2563eb;
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+    .modal-actions .btn-danger {
+      background: #fff;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-right: auto;
+    }
+    .modal-actions .btn-danger:hover { background: #fef2f2; }
+
+    /* ── TEAM MODAL ── */
+    #member-list {
+      max-height: 260px;
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      margin-bottom: 14px;
+    }
+
+    .member-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .member-row:last-child { border-bottom: none; }
+
+    .member-swatch {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .member-name { flex: 1; font-size: 14px; }
+    .btn-remove-member {
+      background: none;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .btn-remove-member:hover { color: #dc2626; background: #fef2f2; }
+
+    .add-member-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .add-member-row input[type="text"] {
+      flex: 1;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 14px;
+    }
+    .add-member-row input[type="color"] {
+      width: 36px; height: 34px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 2px;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    /* ── DETAIL MODAL ── */
+    #detail-meta {
+      background: #f8fafc;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #374151;
+    }
+    #detail-meta strong { color: #111827; }
+
+    #detail-done-section {
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+    }
+    #detail-done-section.is-done {
+      background: #fef2f2;
+      border-color: #fca5a5;
+    }
+
+    #detail-done-section label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      display: block;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    #detail-done-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    #detail-done-row input[type="text"] {
+      flex: 1;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    #btn-mark-done {
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: #16a34a;
+      color: #fff;
+      white-space: nowrap;
+    }
+    #btn-mark-done.undo {
+      background: #dc2626;
+    }
+
+    .history-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 8px;
+    }
+
+    #history-list {
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+    }
+
+    .history-entry {
+      padding: 8px 12px;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 13px;
+      color: #374151;
+    }
+    .history-entry:last-child { border-bottom: none; }
+    .history-entry .h-name { font-weight: 600; color: #111827; }
+    .history-entry .h-date { color: #9ca3af; font-size: 11px; }
+    .history-empty { padding: 12px; text-align: center; color: #9ca3af; font-size: 13px; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header id="top-bar">
+    <span id="app-title">🧹 ChoreBoard</span>
+    <div id="nav-controls">
+      <button class="btn-nav" id="btn-prev">&#8249;</button>
+      <span id="month-label"></span>
+      <button class="btn-nav" id="btn-next">&#8250;</button>
+      <button id="today-btn">Today</button>
+    </div>
+    <div id="action-buttons">
+      <button class="btn-secondary" id="btn-team">👥 Team</button>
+      <button class="btn-primary" id="btn-add-chore">+ Add Chore</button>
+    </div>
+  </header>
+
+  <!-- CALENDAR -->
+  <div id="calendar-wrapper">
+    <div id="calendar">
+      <div class="day-header">Sun</div>
+      <div class="day-header">Mon</div>
+      <div class="day-header">Tue</div>
+      <div class="day-header">Wed</div>
+      <div class="day-header">Thu</div>
+      <div class="day-header">Fri</div>
+      <div class="day-header">Sat</div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD/EDIT CHORE -->
+  <div class="modal" id="modal-chore">
+    <div class="modal-box">
+      <div class="modal-title" id="chore-modal-title">Add Chore</div>
+
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="chore-title" placeholder="e.g. Vacuum the office">
+      </div>
+
+      <div class="form-group">
+        <label>Assign To</label>
+        <select id="chore-assignee">
+          <option value="">— Unassigned —</option>
+        </select>
+      </div>
+
+      <div class="date-row">
+        <div class="form-group">
+          <label>Start Date</label>
+          <input type="date" id="chore-start">
+        </div>
+        <div class="form-group">
+          <label>End Date (optional)</label>
+          <input type="date" id="chore-end">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Recurrence</label>
+        <select id="chore-recurrence-type">
+          <option value="once">One-off (single date)</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+
+      <!-- Daily sub-panel -->
+      <div class="recurrence-sub" id="sub-daily">
+        <div class="form-group" style="margin:0">
+          <label>Every how many days?</label>
+          <input type="number" id="daily-interval" min="1" max="365" value="1">
+        </div>
+      </div>
+
+      <!-- Weekly sub-panel -->
+      <div class="recurrence-sub" id="sub-weekly">
+        <label style="font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:8px;">Days of the week</label>
+        <div class="week-days">
+          <button class="week-day-btn" data-day="0">Sun</button>
+          <button class="week-day-btn" data-day="1">Mon</button>
+          <button class="week-day-btn" data-day="2">Tue</button>
+          <button class="week-day-btn" data-day="3">Wed</button>
+          <button class="week-day-btn" data-day="4">Thu</button>
+          <button class="week-day-btn" data-day="5">Fri</button>
+          <button class="week-day-btn" data-day="6">Sat</button>
+        </div>
+      </div>
+
+      <!-- Monthly sub-panel -->
+      <div class="recurrence-sub" id="sub-monthly">
+        <div class="form-group" style="margin:0">
+          <label>Day of month (1–31)</label>
+          <input type="number" id="monthly-day" min="1" max="31" value="1">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-danger" id="btn-delete-chore" style="display:none">Delete</button>
+        <button class="btn-secondary" id="btn-cancel-chore">Cancel</button>
+        <button class="btn-primary" id="btn-save-chore">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TEAM -->
+  <div class="modal" id="modal-team">
+    <div class="modal-box">
+      <div class="modal-title">Manage Team</div>
+      <div id="member-list"></div>
+      <div class="add-member-row">
+        <input type="color" id="new-member-color" value="#2563eb">
+        <input type="text" id="new-member-name" placeholder="Member name">
+        <button class="btn-primary" id="btn-add-member">Add</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="btn-close-team">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETAIL / HISTORY -->
+  <div class="modal" id="modal-detail">
+    <div class="modal-box">
+      <div class="modal-title" id="detail-chore-title"></div>
+      <div id="detail-meta"></div>
+
+      <div id="detail-done-section">
+        <label id="detail-done-label">Mark as done</label>
+        <div id="detail-done-row">
+          <input type="text" id="detail-done-name" placeholder="Your name">
+          <button id="btn-mark-done">✓ Mark Done</button>
+        </div>
+      </div>
+
+      <div class="history-title">Completion History</div>
+      <div id="history-list"></div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" id="btn-detail-edit">Edit Chore</button>
+        <button class="btn-primary" id="btn-detail-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BACKDROP -->
+  <div id="modal-backdrop"></div>
+
+  <script>
+    // ── 1. CONSTANTS ──
+    const KEYS = {
+      MEMBERS:     'chores_app_members',
+      CHORES:      'chores_app_chores',
+      COMPLETIONS: 'chores_app_completions',
+    };
+
+    const MONTH_NAMES = [
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December'
+    ];
+
+    // ── 2. DATA LAYER ──
+    function load(key) {
+      try { return JSON.parse(localStorage.getItem(key)) || []; }
+      catch { return []; }
+    }
+    function save(key, arr) { localStorage.setItem(key, JSON.stringify(arr)); }
+
+    function loadMembers()      { return load(KEYS.MEMBERS); }
+    function saveMembers(arr)   { save(KEYS.MEMBERS, arr); }
+    function loadChores()       { return load(KEYS.CHORES); }
+    function saveChores(arr)    { save(KEYS.CHORES, arr); }
+    function loadCompletions()  { return load(KEYS.COMPLETIONS); }
+    function saveCompletions(arr) { save(KEYS.COMPLETIONS, arr); }
+
+    function uid() {
+      return (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    // ── 3. DATE HELPERS ──
+    function isoDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function parseDate(str) {
+      const [y, m, d] = str.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    function todayIso() { return isoDate(new Date()); }
+
+    // ── 4. RECURRENCE ENGINE ──
+    function generateOccurrences(chore, year, month) {
+      const monthStart = new Date(year, month, 1);
+      const monthEnd   = new Date(year, month + 1, 0);
+      const choreStart = parseDate(chore.startDate);
+      const choreEnd   = chore.endDate ? parseDate(chore.endDate) : null;
+
+      const winStart = choreStart > monthStart ? choreStart : monthStart;
+      const winEnd   = choreEnd && choreEnd < monthEnd ? choreEnd : monthEnd;
+
+      if (winStart > winEnd) return [];
+
+      const results = [];
+      const r = chore.recurrence;
+
+      if (r.type === 'once') {
+        const d = parseDate(chore.startDate);
+        if (d >= winStart && d <= winEnd) results.push(isoDate(d));
+
+      } else if (r.type === 'daily') {
+        const interval = (r.intervalDays || 1);
+        const msInterval = interval * 86400000;
+        const startMs = choreStart.getTime();
+        let d = new Date(winStart);
+        while (d <= winEnd) {
+          const diff = d.getTime() - startMs;
+          if (diff >= 0 && diff % msInterval === 0) results.push(isoDate(d));
+          d = new Date(d.getTime() + 86400000);
+        }
+
+      } else if (r.type === 'weekly') {
+        const days = new Set(r.daysOfWeek || []);
+        let d = new Date(winStart);
+        while (d <= winEnd) {
+          if (days.has(d.getDay())) results.push(isoDate(d));
+          d = new Date(d.getTime() + 86400000);
+        }
+
+      } else if (r.type === 'monthly') {
+        const dom = r.dayOfMonth || 1;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        if (dom <= daysInMonth) {
+          const candidate = new Date(year, month, dom);
+          if (candidate >= winStart && candidate <= winEnd) results.push(isoDate(candidate));
+        }
+      }
+
+      return results;
+    }
+
+    // ── 5. COMPLETION LOGIC ──
+    function isCompleted(choreId, dateStr) {
+      return loadCompletions().some(c => c.choreId === choreId && c.occurrenceDate === dateStr);
+    }
+
+    function getCompletion(choreId, dateStr) {
+      return loadCompletions().find(c => c.choreId === choreId && c.occurrenceDate === dateStr) || null;
+    }
+
+    function markDone(choreId, dateStr, completedByName) {
+      if (isCompleted(choreId, dateStr)) return;
+      const arr = loadCompletions();
+      arr.push({ choreId, occurrenceDate: dateStr, completedByName, completedAt: Date.now() });
+      saveCompletions(arr);
+    }
+
+    function unmarkDone(choreId, dateStr) {
+      saveCompletions(loadCompletions().filter(
+        c => !(c.choreId === choreId && c.occurrenceDate === dateStr)
+      ));
+    }
+
+    // ── 6. CRUD ──
+    function saveChore(chore) {
+      const arr = loadChores();
+      const idx = arr.findIndex(c => c.id === chore.id);
+      if (idx >= 0) arr[idx] = chore; else arr.push(chore);
+      saveChores(arr);
+      renderCalendar(state.currentYear, state.currentMonth);
+    }
+
+    function deleteChore(id) {
+      saveChores(loadChores().filter(c => c.id !== id));
+      saveCompletions(loadCompletions().filter(c => c.choreId !== id));
+      renderCalendar(state.currentYear, state.currentMonth);
+    }
+
+    function saveTeamMember(member) {
+      const arr = loadMembers();
+      const idx = arr.findIndex(m => m.id === member.id);
+      if (idx >= 0) arr[idx] = member; else arr.push(member);
+      saveMembers(arr);
+    }
+
+    function removeTeamMember(id) {
+      saveMembers(loadMembers().filter(m => m.id !== id));
+      renderTeamList();
+      renderCalendar(state.currentYear, state.currentMonth);
+    }
+
+    // ── 7. RENDERING ──
+    function getMember(id) {
+      return loadMembers().find(m => m.id === id) || null;
+    }
+
+    function initials(name) {
+      return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    }
+
+    function renderChip(chore, dateStr) {
+      const done = isCompleted(chore.id, dateStr);
+      const member = getMember(chore.assigneeId);
+      const color = member ? member.color : '#9ca3af';
+
+      const chip = document.createElement('div');
+      chip.className = 'chore-chip' + (done ? ' done' : '');
+      chip.style.background = color;
+      chip.dataset.choreId = chore.id;
+      chip.dataset.date = dateStr;
+
+      const check = document.createElement('span');
+      check.className = 'chip-check';
+      check.textContent = '✓';
+
+      const title = document.createElement('span');
+      title.className = 'chip-title';
+      title.textContent = chore.title;
+
+      const ini = document.createElement('span');
+      ini.className = 'chip-initials';
+      ini.textContent = member ? initials(member.name) : '?';
+
+      chip.appendChild(check);
+      chip.appendChild(title);
+      chip.appendChild(ini);
+      return chip;
+    }
+
+    function renderCalendar(year, month) {
+      const cal = document.getElementById('calendar');
+
+      // Remove existing day cells (keep the 7 header divs)
+      const headers = Array.from(cal.querySelectorAll('.day-header'));
+      cal.innerHTML = '';
+      headers.forEach(h => cal.appendChild(h));
+
+      document.getElementById('month-label').textContent =
+        `${MONTH_NAMES[month]} ${year}`;
+
+      const today = todayIso();
+      const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const prevMonthDays = new Date(year, month, 0).getDate();
+      const chores = loadChores();
+
+      const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+
+      for (let i = 0; i < totalCells; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'day-cell';
+
+        let cellYear = year, cellMonth = month, cellDay;
+        if (i < firstDay) {
+          cellDay = prevMonthDays - firstDay + i + 1;
+          const prevMonth = month === 0 ? 11 : month - 1;
+          const prevYear  = month === 0 ? year - 1 : year;
+          cellYear = prevYear; cellMonth = prevMonth;
+          cell.classList.add('other-month');
+        } else if (i >= firstDay + daysInMonth) {
+          cellDay = i - firstDay - daysInMonth + 1;
+          const nextMonth = month === 11 ? 0 : month + 1;
+          const nextYear  = month === 11 ? year + 1 : year;
+          cellYear = nextYear; cellMonth = nextMonth;
+          cell.classList.add('other-month');
+        } else {
+          cellDay = i - firstDay + 1;
+        }
+
+        const dateStr = `${cellYear}-${String(cellMonth + 1).padStart(2,'0')}-${String(cellDay).padStart(2,'0')}`;
+        cell.dataset.date = dateStr;
+
+        if (dateStr === today) cell.classList.add('today');
+
+        const numSpan = document.createElement('span');
+        numSpan.className = 'date-num';
+        numSpan.textContent = cellDay;
+        cell.appendChild(numSpan);
+
+        const chipsDiv = document.createElement('div');
+        chipsDiv.className = 'chips-container';
+
+        if (!cell.classList.contains('other-month')) {
+          for (const chore of chores) {
+            const occ = generateOccurrences(chore, cellYear, cellMonth);
+            if (occ.includes(dateStr)) {
+              chipsDiv.appendChild(renderChip(chore, dateStr));
+            }
+          }
+        }
+
+        cell.appendChild(chipsDiv);
+        cal.appendChild(cell);
+      }
+    }
+
+    // ── 8. MODAL CONTROLLERS ──
+    const state = {
+      currentYear:  new Date().getFullYear(),
+      currentMonth: new Date().getMonth(),
+      editingChore: null,
+      detailContext: null,
+    };
+
+    function openBackdrop()  { document.getElementById('modal-backdrop').classList.add('active'); }
+    function closeBackdrop() { document.getElementById('modal-backdrop').classList.remove('active'); }
+
+    function openModal(id) {
+      document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      openBackdrop();
+    }
+
+    function closeAllModals() {
+      document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+      closeBackdrop();
+      state.editingChore = null;
+      state.detailContext = null;
+    }
+
+    function populateMemberSelect(selectedId) {
+      const sel = document.getElementById('chore-assignee');
+      sel.innerHTML = '<option value="">— Unassigned —</option>';
+      loadMembers().forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.name;
+        if (m.id === selectedId) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    function showRecurrenceSub(type) {
+      ['daily','weekly','monthly'].forEach(t => {
+        document.getElementById(`sub-${t}`).classList.toggle('visible', t === type);
+      });
+    }
+
+    function openChoreModal(chore) {
+      state.editingChore = chore || null;
+      document.getElementById('chore-modal-title').textContent = chore ? 'Edit Chore' : 'Add Chore';
+      document.getElementById('btn-delete-chore').style.display = chore ? 'inline-block' : 'none';
+
+      const today = todayIso();
+      document.getElementById('chore-title').value = chore ? chore.title : '';
+      document.getElementById('chore-start').value = chore ? chore.startDate : today;
+      document.getElementById('chore-end').value   = chore ? (chore.endDate || '') : '';
+      populateMemberSelect(chore ? chore.assigneeId : '');
+
+      const r = chore ? chore.recurrence : { type: 'once' };
+      document.getElementById('chore-recurrence-type').value = r.type;
+      document.getElementById('daily-interval').value = r.intervalDays || 1;
+      document.getElementById('monthly-day').value   = r.dayOfMonth || 1;
+
+      document.querySelectorAll('.week-day-btn').forEach(btn => {
+        const d = parseInt(btn.dataset.day);
+        btn.classList.toggle('selected', r.type === 'weekly' && (r.daysOfWeek || []).includes(d));
+      });
+
+      showRecurrenceSub(r.type === 'once' ? '' : r.type);
+      openModal('modal-chore');
+      document.getElementById('chore-title').focus();
+    }
+
+    function readChoreForm() {
+      const type = document.getElementById('chore-recurrence-type').value;
+      let recurrence = { type };
+      if (type === 'daily') {
+        recurrence.intervalDays = parseInt(document.getElementById('daily-interval').value) || 1;
+      } else if (type === 'weekly') {
+        recurrence.daysOfWeek = Array.from(document.querySelectorAll('.week-day-btn.selected'))
+          .map(b => parseInt(b.dataset.day));
+      } else if (type === 'monthly') {
+        recurrence.dayOfMonth = parseInt(document.getElementById('monthly-day').value) || 1;
+      }
+      return {
+        id:         state.editingChore ? state.editingChore.id : uid(),
+        title:      document.getElementById('chore-title').value.trim(),
+        assigneeId: document.getElementById('chore-assignee').value || null,
+        startDate:  document.getElementById('chore-start').value,
+        endDate:    document.getElementById('chore-end').value || null,
+        recurrence,
+      };
+    }
+
+    function validateAndSaveChore() {
+      const chore = readChoreForm();
+      if (!chore.title) { alert('Please enter a chore title.'); return; }
+      if (!chore.startDate) { alert('Please select a start date.'); return; }
+      if (chore.recurrence.type === 'weekly' && chore.recurrence.daysOfWeek.length === 0) {
+        alert('Please select at least one day of the week.'); return;
+      }
+      saveChore(chore);
+      closeAllModals();
+    }
+
+    // Team modal
+    function renderTeamList() {
+      const list = document.getElementById('member-list');
+      const members = loadMembers();
+      if (!members.length) {
+        list.innerHTML = '<div class="history-empty">No team members yet.</div>';
+        return;
+      }
+      list.innerHTML = '';
+      members.forEach(m => {
+        const row = document.createElement('div');
+        row.className = 'member-row';
+        row.innerHTML = `
+          <div class="member-swatch" style="background:${m.color}"></div>
+          <span class="member-name">${m.name}</span>
+          <button class="btn-remove-member" data-id="${m.id}" title="Remove">×</button>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    function openTeamModal() {
+      renderTeamList();
+      document.getElementById('new-member-name').value = '';
+      openModal('modal-team');
+    }
+
+    function addMember() {
+      const name = document.getElementById('new-member-name').value.trim();
+      if (!name) { alert('Enter a member name.'); return; }
+      const color = document.getElementById('new-member-color').value;
+      saveTeamMember({ id: uid(), name, color });
+      document.getElementById('new-member-name').value = '';
+      renderTeamList();
+      renderCalendar(state.currentYear, state.currentMonth);
+    }
+
+    // Detail modal
+    function formatCompletedAt(ts) {
+      const d = new Date(ts);
+      return d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' })
+        + ' at ' + d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
+    }
+
+    function describeRecurrence(r) {
+      if (r.type === 'once')    return 'One-off';
+      if (r.type === 'daily')   return `Every ${r.intervalDays || 1} day(s)`;
+      if (r.type === 'monthly') return `Monthly on the ${r.dayOfMonth}${ordinal(r.dayOfMonth)}`;
+      if (r.type === 'weekly') {
+        const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        return 'Weekly on ' + (r.daysOfWeek || []).map(d => names[d]).join(', ');
+      }
+    }
+
+    function ordinal(n) {
+      const s = ['th','st','nd','rd'];
+      const v = n % 100;
+      return s[(v - 20) % 10] || s[v] || s[0];
+    }
+
+    function openDetailModal(choreId, dateStr) {
+      const chore = loadChores().find(c => c.id === choreId);
+      if (!chore) return;
+      state.detailContext = { chore, dateStr };
+
+      const member = getMember(chore.assigneeId);
+
+      document.getElementById('detail-chore-title').textContent = chore.title;
+      document.getElementById('detail-meta').innerHTML = `
+        <div><strong>Date:</strong> ${dateStr}</div>
+        <div><strong>Assigned to:</strong> ${member ? member.name : 'Unassigned'}</div>
+        <div><strong>Recurrence:</strong> ${describeRecurrence(chore.recurrence)}</div>
+      `;
+
+      refreshDetailDoneSection(chore, dateStr, member);
+      renderHistoryList(chore.id);
+      openModal('modal-detail');
+    }
+
+    function refreshDetailDoneSection(chore, dateStr, member) {
+      const done = isCompleted(chore.id, dateStr);
+      const section = document.getElementById('detail-done-section');
+      const label   = document.getElementById('detail-done-label');
+      const nameInput = document.getElementById('detail-done-name');
+      const btn     = document.getElementById('btn-mark-done');
+
+      section.classList.toggle('is-done', done);
+      label.textContent = done ? 'Completed by' : 'Mark as done';
+
+      if (done) {
+        const comp = getCompletion(chore.id, dateStr);
+        nameInput.value = comp ? comp.completedByName : '';
+        nameInput.disabled = true;
+        btn.textContent = '✕ Undo';
+        btn.classList.add('undo');
+      } else {
+        const member2 = member || getMember(chore.assigneeId);
+        nameInput.value = member2 ? member2.name : '';
+        nameInput.disabled = false;
+        btn.textContent = '✓ Mark Done';
+        btn.classList.remove('undo');
+      }
+    }
+
+    function renderHistoryList(choreId) {
+      const list = document.getElementById('history-list');
+      const completions = loadCompletions()
+        .filter(c => c.choreId === choreId)
+        .sort((a, b) => b.completedAt - a.completedAt);
+
+      if (!completions.length) {
+        list.innerHTML = '<div class="history-empty">No completions recorded yet.</div>';
+        return;
+      }
+
+      list.innerHTML = '';
+      completions.forEach(c => {
+        const entry = document.createElement('div');
+        entry.className = 'history-entry';
+        entry.innerHTML = `
+          <span class="h-name">${c.completedByName}</span>
+          completed on <strong>${c.occurrenceDate}</strong>
+          <div class="h-date">${formatCompletedAt(c.completedAt)}</div>
+        `;
+        list.appendChild(entry);
+      });
+    }
+
+    // ── 9. EVENT WIRING ──
+    document.body.addEventListener('click', e => {
+      const t = e.target;
+
+      // Nav
+      if (t.matches('#btn-prev')) {
+        state.currentMonth--;
+        if (state.currentMonth < 0) { state.currentMonth = 11; state.currentYear--; }
+        renderCalendar(state.currentYear, state.currentMonth);
+        return;
+      }
+      if (t.matches('#btn-next')) {
+        state.currentMonth++;
+        if (state.currentMonth > 11) { state.currentMonth = 0; state.currentYear++; }
+        renderCalendar(state.currentYear, state.currentMonth);
+        return;
+      }
+      if (t.matches('#today-btn')) {
+        state.currentYear = new Date().getFullYear();
+        state.currentMonth = new Date().getMonth();
+        renderCalendar(state.currentYear, state.currentMonth);
+        return;
+      }
+
+      // Top bar actions
+      if (t.matches('#btn-add-chore')) { openChoreModal(null); return; }
+      if (t.matches('#btn-team'))      { openTeamModal(); return; }
+
+      // Chore modal
+      if (t.matches('#btn-cancel-chore')) { closeAllModals(); return; }
+      if (t.matches('#btn-save-chore'))   { validateAndSaveChore(); return; }
+      if (t.matches('#btn-delete-chore')) {
+        if (confirm(`Delete "${state.editingChore.title}"?`)) {
+          deleteChore(state.editingChore.id);
+          closeAllModals();
+        }
+        return;
+      }
+
+      // Recurrence type sub-panel toggle (via change event, but also handle direct click on select)
+      // Week day toggle
+      if (t.matches('.week-day-btn')) {
+        t.classList.toggle('selected');
+        return;
+      }
+
+      // Team modal
+      if (t.matches('#btn-add-member'))   { addMember(); return; }
+      if (t.matches('#btn-close-team'))   { closeAllModals(); return; }
+      if (t.matches('.btn-remove-member')) {
+        const id = t.dataset.id;
+        if (confirm('Remove this team member? Their chores will remain but show as unassigned.')) {
+          removeTeamMember(id);
+        }
+        return;
+      }
+
+      // Detail modal
+      if (t.matches('#btn-detail-close')) { closeAllModals(); return; }
+      if (t.matches('#btn-detail-edit')) {
+        const { chore } = state.detailContext;
+        closeAllModals();
+        openChoreModal(chore);
+        return;
+      }
+      if (t.matches('#btn-mark-done')) {
+        const { chore, dateStr } = state.detailContext;
+        const done = isCompleted(chore.id, dateStr);
+        if (done) {
+          unmarkDone(chore.id, dateStr);
+        } else {
+          const name = document.getElementById('detail-done-name').value.trim();
+          if (!name) { alert('Please enter your name.'); return; }
+          markDone(chore.id, dateStr, name);
+        }
+        refreshDetailDoneSection(chore, dateStr, getMember(chore.assigneeId));
+        renderHistoryList(chore.id);
+        renderCalendar(state.currentYear, state.currentMonth);
+        return;
+      }
+
+      // Chip click → open detail
+      const chip = t.closest('.chore-chip');
+      if (chip) {
+        openDetailModal(chip.dataset.choreId, chip.dataset.date);
+        return;
+      }
+
+      // Backdrop click
+      if (t.matches('#modal-backdrop')) { closeAllModals(); return; }
+    });
+
+    // Recurrence type change
+    document.getElementById('chore-recurrence-type').addEventListener('change', function() {
+      showRecurrenceSub(this.value === 'once' ? '' : this.value);
+    });
+
+    // Allow pressing Enter in add-member name field
+    document.getElementById('new-member-name').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addMember();
+    });
+
+    // ── 10. INIT ──
+    renderCalendar(state.currentYear, state.currentMonth);
+  </script>
+</body>
+</html>
