@@ -937,8 +937,12 @@
 
       const today = todayIso();
       document.getElementById('chore-title').value = chore ? chore.title : '';
-      document.getElementById('chore-start').value = chore ? chore.startDate : today;
-      document.getElementById('chore-end').value   = chore ? (chore.endDate || '') : '';
+      const startInput = document.getElementById('chore-start');
+      startInput.value = chore ? chore.startDate : today;
+      if (chore) startInput.removeAttribute('min'); else startInput.min = today;
+      const endInput = document.getElementById('chore-end');
+      endInput.value = chore ? (chore.endDate || '') : '';
+      endInput.min = startInput.value;
       populateMemberSelect(chore ? chore.assigneeId : '');
 
       const r = chore ? chore.recurrence : { type: 'once' };
@@ -981,6 +985,12 @@
       const chore = readChoreForm();
       if (!chore.title) { alert('Please enter a chore title.'); return; }
       if (!chore.startDate) { alert('Please select a start date.'); return; }
+      if (!state.editingChore && chore.startDate < todayIso()) {
+        alert('Start date cannot be in the past.'); return;
+      }
+      if (chore.endDate && chore.endDate < chore.startDate) {
+        alert('End date cannot be before the start date.'); return;
+      }
       if (chore.recurrence.type === 'weekly' && chore.recurrence.daysOfWeek.length === 0) {
         alert('Please select at least one day of the week.'); return;
       }
@@ -1213,6 +1223,12 @@
       showRecurrenceSub(this.value === 'once' ? '' : this.value);
     });
 
+    document.getElementById('chore-start').addEventListener('change', function() {
+      const endInput = document.getElementById('chore-end');
+      endInput.min = this.value;
+      if (endInput.value && endInput.value < this.value) endInput.value = '';
+    });
+
     // Allow pressing Enter in add-member name field
     document.getElementById('new-member-name').addEventListener('keydown', e => {
       if (e.key === 'Enter') addMember();
@@ -1220,6 +1236,14 @@
 
     // ── 10. INIT ──
     renderCalendar(state.currentYear, state.currentMonth);
+
+    window.addEventListener('storage', (e) => {
+      if (e.key !== KEYS.CHORES && e.key !== KEYS.MEMBERS && e.key !== KEYS.COMPLETIONS) return;
+      renderCalendar(state.currentYear, state.currentMonth);
+      if (document.getElementById('modal-team').classList.contains('active')) {
+        renderTeamList();
+      }
+    });
   </script>
 </body>
 </html>
